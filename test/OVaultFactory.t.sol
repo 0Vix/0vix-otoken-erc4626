@@ -176,7 +176,7 @@ contract vaultTest is Test {
         console.log("User 2 made", user2AmountPlusYield - user2Amount);
     }
 
-    function testDonationShouldNotAffectSharePrice() public {
+    function testUnderlyingDonationShouldNotAffectSharePrice() public {
         OvixERC4626 vault = _getVault();
         uint amount = 20000000000;
 
@@ -204,6 +204,52 @@ contract vaultTest is Test {
         assertEq(vault.totalAssets(), userAssets);
     }
 
+    function testOTokenDonationShouldAffectSharePrice() public {
+        OvixERC4626 vault = _getVault();
+        uint amount = 10000000000;
+
+        // FUND USER
+        _fundUser(address(this), amount);
+        // How much shares will user get
+        uint256 shares = vault.convertToShares(amount);
+
+        // Approve vault to spend user's underlying
+        underlying.approve(address(vault), type(uint256).max);
+
+        // Deposit to vault
+        vault.deposit(amount, address(this));
+
+        uint userAssets = vault.totalAssets();
+        assertEq(userAssets, vault.convertToAssets(shares));
+
+        // Mint oTokens and donate to vault
+        uint mintOTokensUsingUnderlying = 10000000000;
+        _fundUser(address(this), mintOTokensUsingUnderlying);
+
+        underlying.approve(address(vault.oToken()), type(uint256).max);
+        vault.oToken().mint(mintOTokensUsingUnderlying);
+        (bool success, ) = address(vault.oToken()).call(
+            abi.encodeWithSignature(
+                "transfer(address,uint256)",
+                address(vault),
+                vault.oToken().balanceOf(address(this))
+            )
+        );
+        require(success, "Transfer failed");
+        // User asset should be more now
+        assertEq(vault.convertToAssets(shares), vault.totalAssets());
+    
+
+        // withdraw
+        vault.withdraw(
+            vault.convertToAssets(shares),
+            address(this),
+            address(this)
+        );
+
+        assertLt(amount + mintOTokensUsingUnderlying - underlying.balanceOf(address(this)), 10); //rounding error
+    }
+
     function testVaultInteractionWithOToken() public {
         OvixERC4626 vault = _getVault();
         uint amount = 20000000000;
@@ -227,4 +273,18 @@ contract vaultTest is Test {
 
         assertLt(vault.oToken().balanceOf(address(vault)), 100000); //Rounding due to decimal diff
     }
+
+    // function testClaimRewards() public {
+    //     OvixERC4626 vault = _getVault();
+    //     uint amount = 20000000000;
+    //     _fundUser(address(this), amount);
+
+    //     uint256 shares = vault.convertToShares(amount);
+
+    //     underlying.approve(address(vault), type(uint256).max);
+
+    //     vault.deposit(amount, address(this));
+
+    //     vault.claimRewards();
+    // }
 }

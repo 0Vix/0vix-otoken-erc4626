@@ -5,7 +5,7 @@ libs = ["lib"]
 
 [profile.pos]
 fork_block_number = 42054744
-eth-rpc-url = "https://polygon.llamarpc.com"
+eth-rpc-url = "https://polygon-rpc.com"
 etherscan-api-key = ""
 
 [profile.zkevm]
