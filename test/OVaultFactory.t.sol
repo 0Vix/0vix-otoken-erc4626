@@ -271,20 +271,14 @@ contract vaultTest is Test {
             address(this)
         );
 
+
         assertLt(vault.oToken().balanceOf(address(vault)), 100000); //Rounding due to decimal diff
     }
 
-    // function testClaimRewards() public {
-    //     OvixERC4626 vault = _getVault();
-    //     uint amount = 20000000000;
-    //     _fundUser(address(this), amount);
+    function testDeploymentCreate2() public {
+        OvixERC4626 vault = OvixERC4626(address(factory.createERC4626(underlying)));
+        address destination = address(factory.computeERC4626Address(underlying));
 
-    //     uint256 shares = vault.convertToShares(amount);
-
-    //     underlying.approve(address(vault), type(uint256).max);
-
-    //     vault.deposit(amount, address(this));
-
-    //     vault.claimRewards();
-    // }
+        assertEq(address(vault), destination);
+    }
 }
